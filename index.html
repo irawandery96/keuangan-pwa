@@ -10,7 +10,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; overflow: hidden; background: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     
-    /* ===== HALAMAN LOGIN PIN ===== */
+    /* HALAMAN LOGIN PIN */
     #loginPage {
       position: fixed;
       inset: 0;
@@ -86,7 +86,7 @@
       75% { transform: translateX(8px); }
     }
     
-    /* ===== HALAMAN APLIKASI ===== */
+    /* HALAMAN APLIKASI */
     #appPage {
       display: none;
       width: 100%;
@@ -150,13 +150,17 @@
     // JANGAN UBAH DI BAWAH INI
     // ============================================
     
-    // Cek apakah sudah login sebelumnya
+    // ✅ PAKAI sessionStorage — PIN hilang saat app ditutup
+    const STORAGE_KEY = 'keuangan_login';
+    
+    // Cek apakah sudah login sebelumnya (per sesi)
     window.addEventListener('DOMContentLoaded', function() {
-      const sudahLogin = localStorage.getItem('keuangan_login');
+      const sudahLogin = sessionStorage.getItem(STORAGE_KEY);
       if (sudahLogin === 'yes') {
         tampilkanAplikasi();
       }
-      document.getElementById('pinInput').focus();
+      const pinInput = document.getElementById('pinInput');
+      if (pinInput) pinInput.focus();
     });
     
     function cekPin() {
@@ -165,7 +169,7 @@
       const box = document.getElementById('loginBox');
       
       if (input === PIN_RAHASIA) {
-        localStorage.setItem('keuangan_login', 'yes');
+        sessionStorage.setItem(STORAGE_KEY, 'yes');
         tampilkanAplikasi();
       } else {
         errorEl.textContent = '❌ PIN salah, coba lagi';
@@ -181,10 +185,10 @@
       
       const frame = document.getElementById('appFrame');
       
-      // Set URL iframe
-      frame.src = URL_APPS_SCRIPT;
+      if (!frame.src || frame.src === '' || frame.src === window.location.href) {
+        frame.src = URL_APPS_SCRIPT;
+      }
       
-      // Sembunyikan loading setelah iframe dimuat
       frame.addEventListener('load', function() {
         document.getElementById('loading').style.display = 'none';
       });
@@ -198,6 +202,41 @@
     // Tekan Enter untuk login
     document.getElementById('pinInput').addEventListener('keypress', function(e) {
       if (e.key === 'Enter') cekPin();
+    });
+    
+    // ============================================
+    // TERIMA PESAN LOGOUT DARI IFRAME (Apps Script)
+    // ============================================
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.action === 'logout') {
+        // Hapus PIN
+        sessionStorage.removeItem(STORAGE_KEY);
+        
+        // Tampilkan halaman login lagi
+        document.getElementById('loginPage').style.display = 'flex';
+        document.getElementById('appPage').style.display = 'none';
+        
+        // Reset form PIN
+        var pinInput = document.getElementById('pinInput');
+        if (pinInput) {
+          pinInput.value = '';
+          pinInput.focus();
+        }
+        
+        // Reset iframe src biar tidak menyimpan state
+        var frame = document.getElementById('appFrame');
+        if (frame) {
+          frame.src = '';
+        }
+        
+        // Reset loading
+        var loading = document.getElementById('loading');
+        if (loading) loading.style.display = 'flex';
+        
+        // Kosongkan pesan error
+        var errorEl = document.getElementById('errorMsg');
+        if (errorEl) errorEl.textContent = '';
+      }
     });
   </script>
 </body>
