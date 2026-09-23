@@ -205,39 +205,63 @@
     });
     
     // ============================================
-    // TERIMA PESAN LOGOUT DARI IFRAME (Apps Script)
-    // ============================================
-    window.addEventListener('message', function(event) {
-      if (event.data && event.data.action === 'logout') {
-        // Hapus PIN
-        sessionStorage.removeItem(STORAGE_KEY);
-        
-        // Tampilkan halaman login lagi
-        document.getElementById('loginPage').style.display = 'flex';
-        document.getElementById('appPage').style.display = 'none';
-        
-        // Reset form PIN
-        var pinInput = document.getElementById('pinInput');
-        if (pinInput) {
-          pinInput.value = '';
-          pinInput.focus();
-        }
-        
-        // Reset iframe src biar tidak menyimpan state
-        var frame = document.getElementById('appFrame');
-        if (frame) {
-          frame.src = '';
-        }
-        
-        // Reset loading
-        var loading = document.getElementById('loading');
-        if (loading) loading.style.display = 'flex';
-        
-        // Kosongkan pesan error
-        var errorEl = document.getElementById('errorMsg');
-        if (errorEl) errorEl.textContent = '';
-      }
-    });
+// FUNGSI LOGOUT
+// ============================================
+function lakukanLogout() {
+  // Hapus sessionStorage
+  sessionStorage.removeItem(STORAGE_KEY);
+  
+  // Tampilkan halaman login
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('appPage').style.display = 'none';
+  
+  // Reset form PIN
+  var pinInput = document.getElementById('pinInput');
+  if (pinInput) {
+    pinInput.value = '';
+    setTimeout(function() { pinInput.focus(); }, 100);
+  }
+  
+  // Reset iframe src (biar state bersih)
+  var frame = document.getElementById('appFrame');
+  if (frame) frame.src = '';
+  
+  // Reset loading
+  var loading = document.getElementById('loading');
+  if (loading) loading.style.display = 'flex';
+  
+  // Kosongkan pesan error
+  var errorEl = document.getElementById('errorMsg');
+  if (errorEl) errorEl.textContent = '';
+  
+  // Hapus hash dari URL
+  if (window.location.hash === '#logout') {
+    history.replaceState(null, '', window.location.pathname);
+  }
+}
+
+// Cara 1: Terima postMessage dari iframe
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.action === 'logout') {
+    lakukanLogout();
+  }
+});
+
+// Cara 2: Pantau perubahan hash URL
+function cekHashLogout() {
+  if (window.location.hash === '#logout') {
+    lakukanLogout();
+  }
+}
+window.addEventListener('hashchange', cekHashLogout);
+window.addEventListener('DOMContentLoaded', cekHashLogout);
+
+// Cara 3: Cek hash setiap 500ms (fallback terakhir)
+setInterval(function() {
+  if (window.location.hash === '#logout') {
+    lakukanLogout();
+  }
+}, 500);
   </script>
 </body>
 </html>
